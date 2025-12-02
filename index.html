@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Google Play — Demo Gift Card (Experimental UI)</title>
+
+  <style>
+    :root{
+      --bg: #f7f8fb;
+      --card-bg: #ffffff;
+      --muted: #7b7f87;
+      --green-1: #19C37D; /* primary */
+      --green-2: #12a86a;
+      --shadow-md: 0 10px 30px rgba(23,43,77,0.06);
+      font-family: "Inter", "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: light;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      background: var(--bg);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap {
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    /* Card container */
+    .card {
+      width:100%;
+      max-width:420px;
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:20px;
+      box-shadow:var(--shadow-md);
+      border:1px solid rgba(0,0,0,0.04);
+    }
+
+    .topLogo {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      padding-top:6px;
+    }
+    /* Play-like SVG container */
+    .playSvg {
+      width:110px;
+      height:110px;
+      display:block;
+    }
+    .brandText {
+      font-size:20px;
+      color:#222;
+      font-weight:600;
+    }
+    .heading {
+      margin-top: 6px;
+      text-align:center;
+      font-size:18px;
+      color:#333;
+      font-weight:600;
+    }
+
+    .divider {
+      margin:14px 0;
+      border-top:1px solid rgba(0,0,0,0.06);
+    }
+
+    /* game icons row */
+    .iconsRow {
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      margin-top:6px;
+    }
+    .gameIcon {
+      width:56px;
+      height:56px;
+      border-radius:10px;
+      background:#fafafa;
+      border:1px solid rgba(0,0,0,0.04);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      box-shadow:0 6px 18px rgba(30,45,90,0.03);
+    }
+    .gameIcon img { width:84%; height:84%; object-fit:contain; }
+
+    .subText {
+      margin-top:12px;
+      color:var(--muted);
+      font-size:14px;
+      text-align:center;
+      line-height:1.35;
+    }
+
+    /* price buttons */
+    .prices {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:16px;
+    }
+    .priceBtn {
+      padding:14px;
+      border-radius:12px;
+      border:1.5px solid rgba(0,0,0,0.06);
+      background:transparent;
+      color:#333;
+      font-weight:700;
+      font-size:16px;
+      cursor:pointer;
+      transition:all .18s ease;
+      text-align:center;
+    }
+    .priceBtn.selected {
+      background: linear-gradient(90deg, var(--green-1), var(--green-2));
+      color:#fff;
+      border:0;
+      box-shadow: 0 10px 30px rgba(25,195,125,0.12);
+    }
+
+    /* Generate button */
+    .generateWrap {
+      margin-top:18px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+    .generateBtn {
+      width:100%;
+      max-width:360px;
+      border-radius:40px;
+      border:0;
+      padding:16px;
+      font-weight:800;
+      font-size:18px;
+      color:#fff;
+      background: linear-gradient(90deg,var(--green-1),var(--green-2));
+      box-shadow: 0 12px 36px rgba(25,195,125,0.16);
+      cursor:pointer;
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .generateBtn:active { transform:translateY(1px); }
+    .generateBtn.locked {
+      background:#e6f7ef;
+      color:#88bda7;
+      box-shadow:none;
+      cursor:not-allowed;
+      opacity:0.9;
+    }
+
+    .smallFooter {
+      margin-top:14px;
+      color:var(--muted);
+      text-align:center;
+      font-size:12px;
+    }
+
+    /* overlay modal */
+    .overlay {
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(10,12,15,0.45);
+      z-index:90;
+      padding:18px;
+    }
+    .modal {
+      width:100%;
+      max-width:520px;
+      border-radius:12px;
+      background: white;
+      padding:18px;
+      box-shadow: 0 20px 60px rgba(11,22,40,0.18);
+      text-align:center;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .modal h3 { margin:0; font-size:20px; color:#222; }
+    .modal p { color: #6b7280; margin:10px 0 14px; font-size:14px; }
+
+    /* loading spinner */
+    .spinner {
+      width:72px;
+      height:72px;
+      border-radius:50%;
+      border:8px solid rgba(0,0,0,0.06);
+      border-top-color:var(--green-1);
+      animation:spin 1.05s linear infinite;
+      margin: 8px auto;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .loadingMsg { font-weight:700; color:var(--green-1); margin-top:10px; }
+
+    /* final code popup styling */
+    .playBanner {
+      width:100%;
+      max-height:160px;
+      overflow:hidden;
+      border-radius:10px;
+      margin-bottom:12px;
+      border:1px solid rgba(0,0,0,0.04);
+      box-shadow:0 8px 30px rgba(10,20,30,0.06);
+    }
+    .playBanner img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    .codeBox {
+      margin-top:12px;
+      background:#fafafa;
+      border-radius:10px;
+      padding:12px;
+      border:1px solid rgba(0,0,0,0.04);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+    }
+    .codeVal {
+      font-family: monospace;
+      font-size:18px;
+      letter-spacing:2px;
+      font-weight:800;
+      color:#0b3a2b;
+      background: #f2fff8;
+      padding:8px 12px;
+      border-radius:8px;
+    }
+    .copyBtn {
+      border-radius:10px;
+      padding:9px 12px;
+      font-weight:800;
+      border:0;
+      color:#fff;
+      background: linear-gradient(90deg,var(--green-1),var(--green-2));
+      cursor:pointer;
+    }
+
+    @media (max-width:480px){
+      .card{padding:16px}
+      .playSvg{width:96px;height:96px}
+      .priceBtn{font-size:15px;padding:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main" aria-labelledby="mainTitle">
+
+      <!-- TOP: Play logo + text (SVG play-like + label) -->
+      <div class="topLogo" aria-hidden="false">
+        <!-- small colorful triangle inspired icon -->
+        <svg class="playSvg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#2bbef7"/>
+              <stop offset="0.5" stop-color="#2ed573"/>
+              <stop offset="1" stop-color="#ff7a5c"/>
+            </linearGradient>
+          </defs>
+          <rect width="120" height="120" rx="18" fill="#fff"/>
+          <g transform="translate(12,12) scale(0.8)">
+            <path d="M18 8 L82 40 L18 72 Z" fill="url(#g1)"/>
+          </g>
+        </svg>
+
+        <div class="brandText">Google Play</div>
+        <div class="heading">Gift Card Generator</div>
+      </div>
+
+      <div class="divider" role="separator" aria-hidden="true"></div>
+
+      <!-- game icons (PUBG / Free Fire) -->
+      <div class="iconsRow" aria-hidden="false">
+        <div class="gameIcon" title="PUBG">
+          <img src="https://www.apkmirror.com/wp-content/themes/APKMirror/ap_resize/ap_resize.php?src=https%3A%2F%2Fdownloadr2.apkmirror.com%2Fwp-content%2Fuploads%2F2025%2F11%2F97%2F6915780ab413c_com.pubg.imobile.png&w=384&h=384&q=100" alt="PUBG">
+        </div>
+        <div class="gameIcon" title="Free Fire">
+          <img src="https://www.apkmirror.com/wp-content/themes/APKMirror/ap_resize/ap_resize.php?src=https%3A%2F%2Fdownloadr2.apkmirror.com%2Fwp-content%2Fuploads%2F2025%2F10%2F82%2F69018e050008c_com.dts.freefireth.png&w=384&h=384&q=100" alt="Free Fire">
+        </div>
+      </div>
+
+      <div class="subText">Select a gift card value to generate your code.</div>
+
+      <!-- price selection -->
+      <div class="prices" id="prices">
+        <button class="priceBtn selected" data-val="10">₹10</button>
+        <button class="priceBtn" data-val="25">₹25</button>
+        <button class="priceBtn" data-val="50">₹50</button>
+        <button class="priceBtn" data-val="100">₹100</button>
+      </div>
+
+      <div class="generateWrap">
+        <!-- generate is locked until background flow completes; clicking opens app link and starts hidden timer -->
+        <button id="generateBtn" class="generateBtn locked" aria-label="Generate">GENERATE ₹</button>
+      </div>
+
+      <div class="smallFooter">©2025 Demo • Experimental UI</div>
+
+    </div>
+  </div>
+
+  <!-- overlay modal (redirect/loading/code) -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" id="modal">
+      <!-- Redirect state (no visible countdown) -->
+      <div id="stateRedirect" style="display:none">
+        <h3>Redirecting to task…</h3>
+        <p>Please complete the download in the new tab. This page will continue automatically once the sponsor check completes.</p>
+      </div>
+
+      <!-- Loading state -->
+      <div id="stateLoading" style="display:none">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="loadingMsg" id="loadingMsg">Connecting to Garena server…</div>
+        <p style="color:#7b7f87;margin-top:10px;font-size:13px">This is a demo animation — no real codes are generated.</p>
+      </div>
+
+      <!-- Final code state with Play banner at top -->
+      <div id="stateCode" style="display:none">
+        <div class="playBanner" aria-hidden="false">
+          <img src="https://read.cardtonic.com/wp-content/uploads/2023/11/7-Things-To-Consider-Before-Buying-Google-Play-Gift-Card.jpg" alt="Google Play Banner">
+        </div>
+
+        <h3 style="color:#222">Your Code is Ready!</h3>
+        <p style="color:#7b7f87;margin:0 0 8px;font-size:14px">Use this demo code in your app/store (demo only)</p>
+
+        <div class="codeBox" role="region" aria-live="polite">
+          <div class="codeVal" id="finalCode">FF-XXXX-XXXX-XXXX</div>
+          <div style="display:flex;gap:10px">
+            <button class="copyBtn" id="copyBtn" aria-label="Copy Code">Copy Code</button>
+            <button class="priceBtn" id="closeBtn" style="background:transparent;border:1px solid rgba(0,0,0,0.06);">Close</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // CONFIG
+    const appLink = "https://control.kochava.com/v1/cpi/click?campaign_id=kozz76680368-jiwa5aixkc770a679e2e8c&network_id=8411";
+    const hiddenWaitMs = 25000;    // 25s hidden background timer
+    const loadingRotateMs = 1400;  // rotate messages
+    const finalLoadingMs = 4800;   // loading duration before code
+
+    // element refs
+    const priceBtns = document.querySelectorAll('.priceBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const overlay = document.getElementById('overlay');
+    const stateRedirect = document.getElementById('stateRedirect');
+    const stateLoading = document.getElementById('stateLoading');
+    const stateCode = document.getElementById('stateCode');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const finalCodeEl = document.getElementById('finalCode');
+    const copyBtn = document.getElementById('copyBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    let selectedVal = 10;
+    let hiddenStarted = false;
+    let rotateInterval = null;
+    let hiddenTimer = null;
+    let loadingTimer = null;
+
+    // price selection UI
+    priceBtns.forEach(btn=>{
+      btn.addEventListener('click', () => {
+        priceBtns.forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedVal = Number(btn.dataset.val);
+      });
+    });
+
+    // generate format FF-XXXX-XXXX-XXXX
+    function generateFFCode(){
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      function part(len){
+        let s = "";
+        for(let i=0;i<len;i++) s += chars.charAt(Math.floor(Math.random()*chars.length));
+        return s;
+      }
+      return `FF-${part(4)}-${part(4)}-${part(4)}`;
+    }
+
+    // start hidden flow
+    function startHiddenFlow(){
+      if(hiddenStarted) return;
+      hiddenStarted = true;
+
+      // show redirect mode while background timer runs (no visible countdown)
+      stateRedirect.style.display = '';
+      stateLoading.style.display = 'none';
+      stateCode.style.display = 'none';
+      overlay.style.display = 'flex';
+
+      hiddenTimer = setTimeout(() => {
+        // switch to simulated loading messages
+        stateRedirect.style.display = 'none';
+        stateLoading.style.display = '';
+        const messages = [
+          "Connecting to Garena server…",
+          "Securing encryption…",
+          "Generating secure redeem code…"
+        ];
+        let idx = 0;
+        loadingMsg.textContent = messages[idx];
+
+        rotateInterval = setInterval(()=> {
+          idx = (idx + 1) % messages.length;
+          loadingMsg.textContent = messages[idx];
+        }, loadingRotateMs);
+
+        // after finalLoadingMs show code
+        loadingTimer = setTimeout(()=> {
+          clearInterval(rotateInterval);
+          stateLoading.style.display = 'none';
+          stateCode.style.display = '';
+          const code = generateFFCode();
+          finalCodeEl.textContent = code;
+
+          // unlock generate visually for next use (optional)
+          generateBtn.classList.remove('locked');
+          generateBtn.classList.add('unlocked');
+          generateBtn.textContent = "GENERATE";
+          generateBtn.style.boxShadow = "0 10px 36px rgba(0,0,0,0.06)";
+        }, finalLoadingMs);
+
+      }, hiddenWaitMs);
+    }
+
+    // Handle generate click (open sponsor link and start hidden flow)
+    generateBtn.addEventListener('click', () => {
+      // open app link in new tab
+      window.open(appLink, "_blank", "noopener");
+
+      // start hidden flow (shows overlay, then loading, then code)
+      startHiddenFlow();
+    });
+
+    // copy code
+    copyBtn.addEventListener('click', async ()=>{
+      try {
+        await navigator.clipboard.writeText(finalCodeEl.textContent);
+        copyBtn.textContent = "Copied ✓";
+        setTimeout(()=> copyBtn.textContent = "Copy Code", 1500);
+      } catch(e){
+        alert("Copy failed — select manually.");
+      }
+    });
+
+    // close modal
+    closeBtn.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      stateRedirect.style.display = 'none';
+      stateLoading.style.display = 'none';
+      stateCode.style.display = 'none';
+    });
+
+    // close on outside click
+    overlay.addEventListener('click', (e)=>{
+      if(e.target === overlay){
+        overlay.style.display = 'none';
+        stateRedirect.style.display = 'none';
+        stateLoading.style.display = 'none';
+        stateCode.style.display = 'none';
+      }
+    });
+
+    // init locked style
+    (function init(){
+      generateBtn.classList.add('locked');
+    })();
+
+  </script>
+</body>
+</html>
